@@ -7,8 +7,10 @@ import java.util.ArrayList;
 
 public class FileCleaner {
 
-  private static final String IN_FILE_NAME = "C:\\Repos\\TestFiles\\SmallFile.txt";
-  private static final String OUT_FILE_NAME = "C:\\Repos\\TestFiles\\Fixed_SmallFile.txt";
+  private static final String IN_FILE_NAME = "C:\\Repos\\TestFiles\\10-6-2018\\in_201810061502_cswg_Stauffers53340_sw_prices.txt";
+  private String inFilePath;
+  private static final String OUT_FILE_NAME = "C:\\Repos\\TestFiles\\10-6-2018\\Fixed_201810061502_cswg_Stauffers53340_sw_prices.txt";
+  private String outFilePath;
   private String[] previousColumns;
   private String[] currentColumns;
   private String[] basePriceRow;
@@ -17,12 +19,17 @@ public class FileCleaner {
   private ArrayList<String[]> tprRows = new ArrayList<>();
   private ArrayList<String[]> outRows = new ArrayList<>();
 
+  public FileCleaner(String inFilePath, String outFilePath) {
+    this.inFilePath = inFilePath;
+    this.outFilePath = outFilePath;
+  }
+
   public void cleanFile(){
-    try (BufferedReader br = new BufferedReader(new FileReader(IN_FILE_NAME))) {
+    try (BufferedReader br = new BufferedReader(new FileReader(inFilePath))) {
 
       String currentLine;
 
-      try (BufferedWriter bw = new BufferedWriter(new FileWriter(OUT_FILE_NAME, true))) {
+      try (BufferedWriter bw = new BufferedWriter(new FileWriter(outFilePath, true))) {
         while ((currentLine = br.readLine()) != null) {
           currentColumns = currentLine.split("\\|");
           //handle base case/ first line
@@ -44,8 +51,8 @@ public class FileCleaner {
         if (!currentColumns[0].equals(previousColumns[0])) {
           //if the last row was unique make sure its written out
           bw.write(String.join("|", previousColumns));
+          bw.newLine();
         }
-        bw.newLine();
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -53,6 +60,7 @@ public class FileCleaner {
   }
 
   /**
+   * Handles writing out of combined data rows
    *
    * @param currentColumns
    * @param previousColumns
@@ -73,6 +81,8 @@ public class FileCleaner {
 
     } else {
 
+      //Determine which price type had the most corresponding rows
+      //So we know how many total rows we will need to write out for this product
       if (fsRows.size() >= saleRows.size() && fsRows.size() >= tprRows.size() ) {
         handleFsRows();
       } else if (saleRows.size() >= fsRows.size() && saleRows.size() >= tprRows.size()) {
@@ -104,6 +114,13 @@ public class FileCleaner {
     tprRows.clear();
   }
 
+  /**
+   *  TODO: rename this method
+   * Loops through all of the rows for a single product and sorts each row by its price type
+   *
+   * @param br
+   * @param productId
+   */
   private void findBasePrice (BufferedReader br, String productId) {
 
     try {
@@ -123,22 +140,34 @@ public class FileCleaner {
     }
   }
 
-  private void populateRowLists(String[] columns) {
+  /**
+   * Determines the type of row based on the contents of specific columns (base, fs, sale, tpr)
+   * and adds the row to the corresponding list to be processed
+   * @param row the columns for the row being processed
+   */
+  private void populateRowLists(String[] row) {
 
-    if(!columns[5].equals("0") && !columns[5].equals("")) {
-      basePriceRow = columns;
+    if(!row[5].equals("0") && !row[5].equals("")) {
+      basePriceRow = row;
     }
-    else if (!columns[24].equals("0") && !columns[24].equals("")) {
-      fsRows.add(columns);
+    else if (!row[24].equals("0") && !row[24].equals("")) {
+      fsRows.add(row);
     }
-    else if (!columns[12].equals("0") && !columns[12].equals("")) {
-      saleRows.add(columns);
+    else if (!row[12].equals("0") && !row[12].equals("")) {
+      saleRows.add(row);
     }
-    else if (!columns[8].equals("0") && !columns[8].equals("")) {
-      tprRows.add(columns);
+    else if (!row[8].equals("0") && !row[8].equals("")) {
+      tprRows.add(row);
     }
   }
 
+  /**
+   * When there are more fs rows than any other type for a product, create an outRow entry
+   * for each fs row, ex 3 fs prices for one product means we need to write out 3 rows total for
+   * this product.
+   *
+   * write the sale and tpr data to the number of applicable rows
+   */
   private void handleFsRows(){
     for (String[] fsRow : fsRows) {
       String[] outRowEntry = combineFsWithBaseRow(fsRow, null);
@@ -153,6 +182,13 @@ public class FileCleaner {
     }
   }
 
+  /**
+   * When there are more sale rows than any other type for a product, create an outRow entry
+   * for each sale row, ex 3 sale prices for one product means we need to write out 3 rows total for
+   * this product.
+   *
+   * write the fs and tpr data to the number of applicable rows
+   */
   private void handleSaleRows() {
 
     for (String[] saleRow : saleRows) {
@@ -182,6 +218,12 @@ public class FileCleaner {
     }
   }
 
+  /**
+   *
+   * @param row the row containing the fs data
+   * @param outRowEntry row containing the base price data and any other already combined rows
+   * @return a row containing the previously combined data with the new fs data
+   */
   private String[] combineFsWithBaseRow(String[] row, String[] outRowEntry) {
 
     if(outRowEntry == null) {
