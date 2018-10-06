@@ -4,13 +4,11 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class FileCleaner {
 
-  private static final String IN_FILE_NAME = "C:\\Repos\\TestFiles\\201810051502_cswg_Stauffers53340_sw_prices.txt";
-  private static final String OUT_FILE_NAME = "C:\\Repos\\TestFiles\\Fixed_201810051502_cswg_Stauffers53340_sw_prices.txt.txt";
-  private String[] outColumns = new String[25];
+  private static final String IN_FILE_NAME = "C:\\Repos\\TestFiles\\SmallFile.txt";
+  private static final String OUT_FILE_NAME = "C:\\Repos\\TestFiles\\Fixed_SmallFile.txt";
   private String[] previousColumns;
   private String[] currentColumns;
   private String[] basePriceRow;
@@ -25,45 +23,30 @@ public class FileCleaner {
       String currentLine;
 
       try (BufferedWriter bw = new BufferedWriter(new FileWriter(OUT_FILE_NAME, true))) {
-
         while ((currentLine = br.readLine()) != null) {
-
           currentColumns = currentLine.split("\\|");
           //handle base case/ first line
           if (previousColumns == null) {
-            //System.out.println("PREV COLUMNS NULL");
             previousColumns = currentColumns;
             continue;
           }
 
           if (currentColumns[0].equals(previousColumns[0])) {
-            //set the outColumns to current so that outColumn entries that are not over written in
-            //copyNeededColumns are still filled in
-            //System.out.println("Matching rows");
-            //System.out.println(Arrays.toString(currentColumns));
-            outColumns = currentColumns;
             combineRows(currentColumns, previousColumns, br, bw);
           } else {
             //the current row did not match the previous write out
-            //System.out.println("Writing unique row");
             bw.write(String.join("|", previousColumns));
             bw.newLine();
             previousColumns = currentColumns;
           }
-
         }
 
-//        if (outColumns[0].equals(previousColumns[0])) {
-//          //if the last rows were all the same product
-//          System.out.println("writing last line");
-//          bw.write(String.join("|", outColumns));
-//        } else {
-          //if the last row was a unique product
-          //bw.write(String.join("|", previousColumns));
-        //}
-        //bw.newLine();
+        if (!currentColumns[0].equals(previousColumns[0])) {
+          //if the last row was unique make sure its written out
+          bw.write(String.join("|", previousColumns));
+        }
+        bw.newLine();
       }
-
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -81,23 +64,13 @@ public class FileCleaner {
                            BufferedReader br,
                            BufferedWriter bw) {
 
-
-    //if (isBasePrice(previousColumns)) {
-    //  basePriceRow = previousColumns;
-    //} else if (isBasePrice(currentColumns)) {
-    //  basePriceRow = currentColumns;
-    //} else {
-      populateRowLists(previousColumns);
-      populateRowLists(currentColumns);
-      //System.out.println("finding base");
-      //System.out.println(Arrays.toString(currentColumns));
-      findBasePrice(br , previousColumns[0]);
-   // }
+    populateRowLists(previousColumns);
+    populateRowLists(currentColumns);
+    findBasePrice(br , previousColumns[0]);
 
     if (basePriceRow == null) {
-      System.out.println("Should not happen base price was null");
-      System.out.println(Arrays.toString(currentColumns));
-      //writeOutRows();
+      System.out.println("No base price found");
+
     } else {
 
       if (fsRows.size() >= saleRows.size() && fsRows.size() >= tprRows.size() ) {
@@ -112,22 +85,19 @@ public class FileCleaner {
 
       for(String[] outRow : outRows) {
         try {
-          //System.out.println("Writing out rows");
+          //write out all combined rows
           bw.write(String.join("|", outRow));
           bw.newLine();
         } catch (IOException e) {
           e.printStackTrace();
         }
       }
+      //remove all entries from sale type lists
       resetRows();
     }
-
   }
 
   public void resetRows() {
-    //System.out.println("reseting base price row");
-    //System.out.println(Arrays.toString(basePriceRow));
-    basePriceRow = null;
     outRows.clear();
     fsRows.clear();
     saleRows.clear();
@@ -138,7 +108,6 @@ public class FileCleaner {
 
     try {
       String currentLine;
-
       while ((currentLine = br.readLine()) != null) {
         String[] columns = currentLine.split("\\|");
 
@@ -148,13 +117,10 @@ public class FileCleaner {
           this.previousColumns = columns;
           break;
         }
-
       }
-
     } catch( IOException ex) {
       ex.printStackTrace();
     }
-
   }
 
   private void populateRowLists(String[] columns) {
@@ -171,7 +137,6 @@ public class FileCleaner {
     else if (!columns[8].equals("0") && !columns[8].equals("")) {
       tprRows.add(columns);
     }
-
   }
 
   private void handleFsRows(){
@@ -201,8 +166,6 @@ public class FileCleaner {
     for(int i = 0; i < tprRows.size(); i++) {
       combineTprWithBaseRow(tprRows.get(i), outRows.get(i));
     }
-
-
   }
 
   private void handleTprRows() {
@@ -221,7 +184,7 @@ public class FileCleaner {
 
   private String[] combineFsWithBaseRow(String[] row, String[] outRowEntry) {
 
-    if(outRowEntry == null){
+    if(outRowEntry == null) {
       outRowEntry = basePriceRow.clone();
     }
     outRowEntry[24] = row[24];
@@ -229,12 +192,11 @@ public class FileCleaner {
     outRowEntry[22] = row[22];
 
     return outRowEntry;
-
   }
 
   private String[] combineSaleWithBaseRow(String[] row, String[] outRowEntry) {
 
-    if(outRowEntry == null){
+    if(outRowEntry == null) {
       outRowEntry = basePriceRow.clone();
     }
 
@@ -244,12 +206,11 @@ public class FileCleaner {
     outRowEntry[15] = row[15];
 
     return outRowEntry;
-
   }
 
   private String[] combineTprWithBaseRow(String[] row, String[] outRowEntry) {
 
-    if(outRowEntry == null){
+    if(outRowEntry == null) {
       outRowEntry = basePriceRow.clone();
     }
 
@@ -259,16 +220,5 @@ public class FileCleaner {
     outRowEntry[11] = row[11];
 
     return outRowEntry;
-
   }
-
-  private boolean isBasePrice (String[] columns) {
-
-    if(!columns[5].equals("0") && !columns[5].equals("")) {
-      return true;
-    }
-    return false;
-  }
-
-
 }
