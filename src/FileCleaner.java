@@ -7,9 +7,7 @@ import java.util.ArrayList;
 
 public class FileCleaner {
 
-  private static final String IN_FILE_NAME = "C:\\Repos\\TestFiles\\10-6-2018\\in_201810061502_cswg_Stauffers53340_sw_prices.txt";
   private String inFilePath;
-  private static final String OUT_FILE_NAME = "C:\\Repos\\TestFiles\\10-6-2018\\Fixed_201810061502_cswg_Stauffers53340_sw_prices.txt";
   private String outFilePath;
   private String[] previousColumns;
   private String[] currentColumns;
